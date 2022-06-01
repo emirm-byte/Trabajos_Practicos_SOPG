@@ -18,7 +18,8 @@ int main(void)
 	char bufferIn[BUFFER_SIZE];
 	int32_t bytesRead;
 	int32_t returnCode; 
-	
+	FILE *flog_ptr;
+	FILE *fsig_ptr;
 
     
     if ( (returnCode = mknod(FIFO_NAME, S_IFIFO | 0666, 0) ) < -1  )
@@ -28,36 +29,49 @@ int main(void)
     }
     
     
-	printf("Esperando por el proceso Writer...\n");
-	if ( (fd = open(FIFO_NAME, O_RDONLY) ) < 0 )
+    printf("Esperando por el proceso Writer...\n");
+    if ( (fd = open(FIFO_NAME, O_RDONLY) ) < 0 )
     {
         printf("Error al abrir el archivo de la tuberia nombrada: %d\n", fd);
         exit(1);
     }
     
-	printf("Tenemos un Writer\n");
+    printf("Tenemos un Writer\n");
 
+    //Abrimos o creamos los archivos correspondientes//	
+    flog_ptr = fopen("log.txt","a");
+    if(flog_ptr == NULL)
+     {
+      printf("Error al crear o abrir el archivo log.txt!");   
+      exit(1);             
+     }
+	
+    fsig_ptr = fopen("sign.txt","a");
+    if(fsig_ptr == NULL)
+     {
+      printf("Error al crear o abrir el archivo sign.txt!");   
+      exit(1);             
+     }
+     	
     /* Loop until read syscall returns a value <= 0 */
-	do
-	{
-        
+    do
+     {
 		bytesRead = readFromPipe(bufferIn);
 		if(strstr(bufferIn, "DATA") != NULL)
-		{
-			
-			
-			
+		{  
+		    fprintf(flog_ptr, bufferIn);		
 		}
 		else if(strstr(bufferIn, "SIGN") != NULL)
 		{
-			
-			
+		    fprintf(fsig_ptr, bufferIn);		
 		}
 			
-		
-	}
-	while (bytesRead > 0);
+      }
+     while (bytesRead > 0);
 
+	fclose(flog_ptr);
+	fclose(fsig_ptr);
+	
 	return 0;
 }
 
