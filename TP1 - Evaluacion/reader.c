@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <time.h>
 
 #define FIFO_NAME "com_channel"
 #define BUFFER_SIZE 300
@@ -20,6 +21,8 @@ int main(void)
 	int32_t returnCode; 
 	FILE *flog_ptr;
 	FILE *fsig_ptr;
+	time_t t;
+	struct tm *newTime;
 
     
     if ( (returnCode = mknod(FIFO_NAME, S_IFIFO | 0666, 0) ) < -1  )
@@ -37,7 +40,8 @@ int main(void)
     }
     
     printf("Tenemos un Writer\n");
-
+	
+    
     //Abrimos o creamos los archivos correspondientes//	
     flog_ptr = fopen("log.txt","a");
     if(flog_ptr == NULL)
@@ -57,13 +61,17 @@ int main(void)
     do
      {
 		bytesRead = readFromPipe(bufferIn);
+	    
+	    	t = time(NULL);
+	        newTime = localtime(&t);
+	    
 		if(strstr(bufferIn, "DATA") != NULL)
 		{  
-		    fprintf(flog_ptr, bufferIn);		
+		    fprintf(flog_ptr , "%s --> %s" , bufferIn , asctime(newTime));		
 		}
 		else if(strstr(bufferIn, "SIGN") != NULL)
 		{
-		    fprintf(fsig_ptr, bufferIn);		
+		    fprintf(fsig_ptr , "%s --> %s" , bufferIn , asctime(newTime));		
 		}
 			
       }
