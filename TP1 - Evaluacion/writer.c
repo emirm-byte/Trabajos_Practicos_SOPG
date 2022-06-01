@@ -70,7 +70,7 @@ int main(void)
 		printf("Ingrese el texto y luego presion Enter: \n");
 		fgets(bufferIn, sizeof(bufferIn), stdin);
 		
-		snprintf(bufferOut, sizeof(bufferOut), "DATA: %s", bufferIn);
+		snprintf(bufferOut, sizeof(bufferOut), "DATA: %s \n", bufferIn);
 		
 		writeToPipe(bufferOut);
         		
