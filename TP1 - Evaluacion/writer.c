@@ -24,14 +24,14 @@ static void initSignalHandlers(void);
 
 void sigusr1_handler(int sig) 
 {
-	char *msg_sig = "SIGN:1\n";
+	char *msg_sig = "SIGN:1";
 	writeToPipe(msg_sig);
 }
 
 
 void sigusr2_handler(int sig) 
 {
-	char *msg_sig = "SIGN:2\n";
+	char *msg_sig = "SIGN:2";
 	writeToPipe(msg_sig);
 }
 
@@ -70,7 +70,7 @@ int main(void)
 		printf("Ingrese el texto y luego presion Enter: \n");
 		fgets(bufferIn, sizeof(bufferIn), stdin);
 		
-		snprintf(bufferOut, sizeof(bufferOut), "DATA: %s \n", bufferIn);
+		snprintf(bufferOut, sizeof(bufferOut), "DATA: %s", bufferIn);
 		
 		writeToPipe(bufferOut);
         		
