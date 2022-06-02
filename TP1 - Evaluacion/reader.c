@@ -13,14 +13,16 @@
 #define BUFFER_SIZE 300
 
 static int32_t fd;
+static int32_t readFromPipe(char *buff);
 
 int main(void)
 {
 	char bufferIn[BUFFER_SIZE];
+        char bufferFile[BUFFER_SIZE];
 	int32_t bytesRead;
 	int32_t returnCode; 
-	FILE *flog_ptr;
-	FILE *fsig_ptr;
+	int32_t fd_log;
+	int32_t fd_sig;
 	time_t t;
 	struct tm *newTime;
 
@@ -43,42 +45,51 @@ int main(void)
 	
     
     //Abrimos o creamos los archivos correspondientes//	
-    flog_ptr = fopen("log.txt","a");
-    if(flog_ptr == NULL)
+    
+    if( (fd_log = open("log.txt", O_RDWR )) < 0 )
      {
       printf("Error al crear o abrir el archivo log.txt!");   
       exit(1);             
      }
 	
-    fsig_ptr = fopen("sign.txt","a");
-    if(fsig_ptr == NULL)
+    if( (fd_sig = open("sign.txt", O_RDWR )) < 0 )
      {
       printf("Error al crear o abrir el archivo sign.txt!");   
       exit(1);             
      }
      	
-    /* Loop until read syscall returns a value <= 0 */
+
     do
      {
 		bytesRead = readFromPipe(bufferIn);
 	    
+
 	    	t = time(NULL);
 	        newTime = localtime(&t);
 	    
 		if(strstr(bufferIn, "DATA") != NULL)
 		{  
-		    fprintf(flog_ptr , "%s --> %s" , bufferIn , asctime(newTime));		
+		    snprintf(bufferFile, BUFFER_SIZE, "%s --> %s" , bufferIn , asctime(newTime));
+		    printf("%s" , bufferFile);
+                    write(fd_log ,bufferFile , strlen(bufferFile));		    
+
+			
 		}
 		else if(strstr(bufferIn, "SIGN") != NULL)
 		{
-		    fprintf(fsig_ptr , "%s --> %s" , bufferIn , asctime(newTime));		
+	            snprintf(bufferFile, BUFFER_SIZE, "%s --> %s" , bufferIn , asctime(newTime));
+		    printf("%s" , bufferFile);
+                    write(fd_sig ,bufferFile , strlen(bufferFile));
+              		
 		}
+
+		
 			
       }
      while (bytesRead > 0);
 
-	fclose(flog_ptr);
-	fclose(fsig_ptr);
+	close(fd_log);
+	close(fd_sig);
 	
 	return 0;
 }
@@ -87,16 +98,17 @@ int main(void)
 static int32_t readFromPipe(char *buff)
 {
 	
-	int32_t bytesRead = 0;
+  int32_t bytesRead = 0;	
 	
-	if ((bytesRead = read(fd, buff, BUFFER_SIZE)) == -1)
+  bzero(buff, BUFFER_SIZE);  
+ 
+  if ((bytesRead = read(fd, buff, BUFFER_SIZE)) == -1)
 	 {
 	    perror("read");
-     }
-    else
+         }
+        else
 	 {
-		buff[bytesRead] = '\0';
-		printf("reader: read %d bytes: \"%s\"\n", bytesRead, buff);
+	     buff[bytesRead] = '\0';
 	 }	
 	
    return bytesRead;
