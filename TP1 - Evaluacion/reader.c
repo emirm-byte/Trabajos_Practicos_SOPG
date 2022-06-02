@@ -62,7 +62,6 @@ int main(void)
     do
      {
 		bytesRead = readFromPipe(bufferIn);
-	    
 
 	    	t = time(NULL);
 	        newTime = localtime(&t);

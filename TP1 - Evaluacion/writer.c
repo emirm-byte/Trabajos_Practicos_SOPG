@@ -25,14 +25,14 @@ static void initSignalHandlers(void);
 void sigusr1_handler(int sig) 
 {
 	char *msg_sig = "SIGN:1\n";
-	writeToPipe(msg_sig);
+	write(fd, msg_sig, strlen(msg_sig)-1);
 }
 
 
 void sigusr2_handler(int sig) 
 {
 	char *msg_sig = "SIGN:2\n";
-	writeToPipe(msg_sig);
+	write(fd, msg_sig, strlen(msg_sig)-1);
 }
 
 
@@ -73,7 +73,7 @@ int main(void)
 		snprintf(bufferOut, BUFFER_SIZE, "DATA: %s", bufferIn);
 		
 		writeToPipe(bufferOut);
-        		
+                        		
 	}
 	return 0;
 }
@@ -97,7 +97,7 @@ static void writeToPipe(char *buff)
 static void initSignalHandlers(void)
 {
 	sa1.sa_handler = sigusr1_handler;
-	sa1.sa_flags = 0; //SA_RESTART;
+	sa1.sa_flags = SA_RESTART;
 	sigemptyset(&sa1.sa_mask);
 	if (sigaction(SIGUSR1, &sa1, NULL) == -1) {
 		perror("sigaction");
@@ -105,7 +105,7 @@ static void initSignalHandlers(void)
 	}
 	
 	sa2.sa_handler = sigusr2_handler;
-	sa2.sa_flags = 0; //SA_RESTART;
+	sa2.sa_flags = SA_RESTART;
 	sigemptyset(&sa2.sa_mask);
 	if (sigaction(SIGUSR2, &sa2, NULL) == -1) {
 		perror("sigaction");

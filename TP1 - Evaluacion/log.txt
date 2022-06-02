@@ -1,0 +1,6 @@
+DATA: hola mundo --> Thu Jun  2 01:49:30 2022
+DATA: mensaje 1 --> Thu Jun  2 01:49:36 2022
+DATA: GNU Linux is the best operating system --> Thu Jun  2 01:50:11 2022
+DATA: window$ --> Thu Jun  2 01:50:17 2022
+DATA: mensaje 2 --> Thu Jun  2 01:50:29 2022
+DATA: mensaje 3 --> Thu Jun  2 01:50:34 2022
