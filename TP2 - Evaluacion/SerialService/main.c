@@ -52,11 +52,14 @@ void* serial_port_thread (void* message)
 	
 	int bytesReadSP = 0; //Bytes leidos por el serial port//
 	char bufferSP[20] = {0}; //Buffer definido para la lectura de datos del serial port//
-	
+	void *ret;
+
 	//Abro la conexion del serial port//
 	if(serial_open(1,115200)!=0)
         {
           printf("Error abriendo puerto serie\r\n");
+		  strcpy(ret, "Exit Serial port Thread by serial port init Error");
+		  pthread_exit(ret);
         }
 	else
 		{
@@ -77,7 +80,7 @@ void* serial_port_thread (void* message)
 		pthread_mutex_lock (&mutexFd);
 		if(newfd == -1)
 		{
-			perror("Error en el sockect no se puede enviar datos");
+			perror("Error en el socket no se puede enviar datos");
 		}
 		else
 		{
@@ -85,7 +88,6 @@ void* serial_port_thread (void* message)
 			if (write (newfd, bufferSP, strlen(bufferSP)) == -1)
     		{	
       			perror("Error escribiendo mensaje en socket");
-      			//exit (1);
     		}
 
 		}
@@ -95,29 +97,36 @@ void* serial_port_thread (void* message)
 	 usleep(10000); // Delay de 10ms para que el CPU no se vaya al 100%
 	} 
 
-	serial_close();      
-	
+	serial_close();
+	strcpy(ret, "Exit Serial port Thread");
+	pthread_exit(ret);      
 }
 
 
 int main(void)
 {
 	char bufferSocket[20];
-	int res;	
+	int res;
+	void *ret;	
 
+	//Inicio los handlers de las senales SIGINT y SIGTERM//
 	initSignalHandlers();
-	bloquearSignals();
+	//Bloqueo ambas señales antes de crear el hilo para el serial port//
+	bloquearSignals(); 
 
+	//Creo el hilo que se encarga de manejar el serial port//
 	res = pthread_create (&thread_serial, NULL, serial_port_thread,NULL);
 	if (res != 0){
 		perror("Error al crear el hilo serial port");
 		return(-1);
 	}
 	
+	//Desbloqueo las señales deseadas solo para el hilo principal// 
 	desbloquearSignals();
 
 	printf("Inicio Serial Service\r\n");
 
+	//Inicio el server TCP//
 	if(initTCPServer()!=0){
 		perror("Error al iniciar el Socket TCP");
 		return(-1);	   
@@ -128,6 +137,7 @@ int main(void)
 	   // Ejecutamos accept() para recibir conexiones entrantes
 		addr_len = sizeof(struct sockaddr_in);
 		
+		//Uso el mutex para la asignacion del FD de conexion//
 		pthread_mutex_lock (&mutexFd);
 		if ( (newfd = accept(s, (struct sockaddr *)&clientaddr, &addr_len)) == -1)
       	{
@@ -142,14 +152,17 @@ int main(void)
 
 			// Leemos mensaje de cliente - interface Service
 			n =read(newfd,bufferSocket,20);
+			//Si el valor retornado por read es -1 o 0, el cliente esta deconectado//
 			if( (n == -1) || (n ==0 ) )
 			{
+				//Salgo del bucle secudario para poder aceptar luego otra conexion//
 				perror("Error leyendo mensaje en socket - cliente desconectado");
 				close(newfd);
-				break;
+				break; 
 			}
 			else
 			{
+				//Lo que recibo por socket lo envio por el serial port//
 				bufferSocket[n]=0;
 				printf("Recibi %d bytes.:%s\n",n,bufferSocket);
 				printf("La cadena es: %s\n",bufferSocket);
@@ -161,13 +174,14 @@ int main(void)
 
 	}
 
-
+	pthread_join (thread_serial, &ret); //Espero a que finalice el hilo serial port//
+	printf("El hilo Serial port finalizó por '%s'\n", (char *)ret); //imprimo la razón de dicha finalización//
 	exit(EXIT_SUCCESS);
 	return 0;
 }
 
 
-
+//Funcion que inicializa una parte del server TCP//
 
 int initTCPServer(void){
  
@@ -199,7 +213,7 @@ int initTCPServer(void){
 
 }
 
-
+//Funcion que inicializa los handlers de las señales usadas en el programa//
 static void initSignalHandlers(void){
 
 	sa1.sa_handler = sigint_term_handler;
@@ -220,6 +234,7 @@ static void initSignalHandlers(void){
 
 }
 
+//Función que bloquea las señales SIGINT y SIGTERM//
 static void bloquearSignals(void)
 {
 	sigset_t set;
@@ -230,6 +245,7 @@ static void bloquearSignals(void)
     pthread_sigmask(SIG_BLOCK, &set, NULL);
 }
 
+//Funcion que desbloquea las señales SIGINT y SIGTERM//
 static void desbloquearSignals(void)
 {
 	sigset_t set;
