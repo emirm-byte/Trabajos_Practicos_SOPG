@@ -55,48 +55,48 @@ void* serial_port_thread (void* message)
 	//Abro la conexion del serial port//
 	if(serial_open(1,115200)!=0)
         {
-          printf("Error abriendo puerto serie\r\n");
-		  strcpy(ret, "Exit Serial port Thread by serial port init Error");
-		  pthread_exit(ret);
+        	printf("Error abriendo puerto serie\r\n");
+		strcpy(ret, "Exit Serial port Thread by serial port init Error");
+        	pthread_exit(ret);
         }
 	else
-		{
-	      printf("Puerto serie OK!\r\n");	
-		}
+	{
+		printf("Puerto serie OK!\r\n");	
+	}
  
     //Bucle infinito dentro del hilo del serial port//
 	while(1)
 	{
 	
-	 if(signal_exit_flag == 1)
-	 {
-		break;
-	 }
-	 //Leo los datos provenientes del serial port//
-	 if((bytesReadSP = serial_receive(bufferSP,12)) != -1)
-	 {
-		printf("Se han leido: %d bytes\n",bytesReadSP);
-	 	printf("La trama leida es: %s \n",bufferSP);
+		if(signal_exit_flag == 1)
+	     	{
+			break;
+	     	}
+	 	//Leo los datos provenientes del serial port//
+	 	if((bytesReadSP = serial_receive(bufferSP,12)) != -1)
+	 	{
+			printf("Se han leido: %d bytes\n",bytesReadSP);
+	 		printf("La trama leida es: %s \n",bufferSP);
 		
-		//Pongo en un mutex la comprobacion del FD del conexion ya que es una variable compartida//
-		pthread_mutex_lock (&mutexFd);
-		if(newfd == -1)
-		{
-			perror("Error en el socket no se puede enviar datos");
-		}
-		else
-		{
-			//Si tengo datos en el buffer y el FD de conexiòn esta definido envio por el serial port//
-			if (write (newfd, bufferSP, strlen(bufferSP)) == -1)
-    		{	
-      			perror("Error escribiendo mensaje en socket");
-    		}
+			//Pongo en un mutex la comprobacion del FD del conexion ya que es una variable compartida//
+			pthread_mutex_lock (&mutexFd);
+			if(newfd == -1)
+			{
+				perror("Error en el socket no se puede enviar datos");
+			}
+			else
+			{
+				//Si tengo datos en el buffer y el FD de conexiòn esta definido envio por el serial port//
+				if (write (newfd, bufferSP, strlen(bufferSP)) == -1)
+    				{	
+      					perror("Error escribiendo mensaje en socket");
+    				}
 
-		}
-		pthread_mutex_unlock (&mutexFd);
+			}
+			pthread_mutex_unlock (&mutexFd);
 
-	 }
-	 usleep(10000); // Delay de 10ms para que el CPU no se vaya al 100%
+	 	}
+	 	usleep(10000); // Delay de 10ms para que el CPU no se vaya al 100%
 	} 
 
 	serial_close(); //Cierro el serial port//
@@ -118,7 +118,8 @@ int main(void)
 
 	//Creo el hilo que se encarga de manejar el serial port//
 	res = pthread_create (&thread_serial, NULL, serial_port_thread,NULL);
-	if (res != 0){
+	if (res != 0)
+	{
 		perror("Error al crear el hilo serial port");
 		return(-1);
 	}
@@ -129,7 +130,8 @@ int main(void)
 	printf("Inicio Serial Service\r\n");
 
 	//Inicio el server TCP//
-	if(initTCPServer()!=0){
+	if(initTCPServer()!=0)
+	{
 		perror("Error al iniciar el Socket TCP");
 		return(-1);	   
 	}
@@ -186,7 +188,8 @@ int main(void)
 
 //Funcion que inicializa una parte del server TCP//
 
-int initTCPServer(void){
+int initTCPServer(void)
+{
  
 	s = socket(AF_INET,SOCK_STREAM, 0);
 
@@ -210,14 +213,15 @@ int initTCPServer(void){
 	// Seteamos socket en modo Listening
 	if (listen (s, 10) == -1) // backlog=10
   	{
-    	    perror("Error en listen");
+    	 	perror("Error en listen");
     		exit(1);
   	}
 
 }
 
 //Funcion que inicializa los handlers de las señales usadas en el programa//
-static void initSignalHandlers(void){
+static void initSignalHandlers(void)
+{
 
 	sa1.sa_handler = sigint_term_handler;
 	sa1.sa_flags = SA_RESTART;
@@ -240,7 +244,7 @@ static void initSignalHandlers(void){
 //Función que bloquea las señales SIGINT y SIGTERM//
 static void bloquearSignals(void)
 {
-	sigset_t set;
+    sigset_t set;
     int s;
     sigemptyset(&set);
     sigaddset(&set, SIGINT);
@@ -251,7 +255,7 @@ static void bloquearSignals(void)
 //Funcion que desbloquea las señales SIGINT y SIGTERM//
 static void desbloquearSignals(void)
 {
-	sigset_t set;
+    sigset_t set;
     int s;
     sigemptyset(&set);
     sigaddset(&set, SIGINT);
