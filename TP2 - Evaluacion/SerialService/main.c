@@ -25,6 +25,7 @@ int n;
 int s;
 struct sigaction sa1;
 struct sigaction sa2;
+static int signal_exit_flag = 0;
 
 //Inicializamos un Mutex para proteger el acceso de una variable compartida//
 pthread_mutex_t mutexFd = PTHREAD_MUTEX_INITIALIZER;
@@ -39,10 +40,7 @@ void sigint_term_handler(int sig)
 {
 	char *msj = "Cierre de programa por SIGINT o SIGTERM!\n"; 
 	write(0, msj , strlen(msj));
-	close(newfd); //Cierro conexiones en el Socket TCP//
-	serial_close(); //Cierro el puerto Serie//
-	pthread_cancel (thread_serial); //Cierro el Thread
-	exit(EXIT_SUCCESS);
+	signal_exit_flag = 1;
 }
 
 //Acá se define el código del Thread que se encarga del manejo del serial port//
@@ -70,6 +68,10 @@ void* serial_port_thread (void* message)
 	while(1)
 	{
 	
+	 if(signal_exit_flag == 1)
+	 {
+		break;
+	 }
 	 //Leo los datos provenientes del serial port//
 	 if((bytesReadSP = serial_receive(bufferSP,12)) != -1)
 	 {
@@ -97,7 +99,7 @@ void* serial_port_thread (void* message)
 	 usleep(10000); // Delay de 10ms para que el CPU no se vaya al 100%
 	} 
 
-	serial_close();
+	serial_close(); //Cierro el serial port//
 	strcpy(ret, "Exit Serial port Thread");
 	pthread_exit(ret);      
 }
@@ -139,10 +141,10 @@ int main(void)
 		
 		//Uso el mutex para la asignacion del FD de conexion//
 		pthread_mutex_lock (&mutexFd);
-		if ( (newfd = accept(s, (struct sockaddr *)&clientaddr, &addr_len)) == -1)
+		if ( ((newfd = accept(s, (struct sockaddr *)&clientaddr, &addr_len)) == -1)||(signal_exit_flag == 1))
       	{
-		      perror("Error en accept");
-		      exit(1);
+		      perror("Error en accept or Exit by signal");
+		      break;
 		}
 	 	pthread_mutex_unlock(&mutexFd);
 		
@@ -153,7 +155,7 @@ int main(void)
 			// Leemos mensaje de cliente - interface Service
 			n =read(newfd,bufferSocket,20);
 			//Si el valor retornado por read es -1 o 0, el cliente esta deconectado//
-			if( (n == -1) || (n ==0 ) )
+			if( (n == -1) || (n ==0 ) || (signal_exit_flag == 1))
 			{
 				//Salgo del bucle secudario para poder aceptar luego otra conexion//
 				perror("Error leyendo mensaje en socket - cliente desconectado");
@@ -174,6 +176,7 @@ int main(void)
 
 	}
 
+	close(newfd); //Cierro conexiones en el Socket TCP//
 	pthread_join (thread_serial, &ret); //Espero a que finalice el hilo serial port//
 	printf("El hilo Serial port finalizó por '%s'\n", (char *)ret); //imprimo la razón de dicha finalización//
 	exit(EXIT_SUCCESS);
